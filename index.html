@@ -53,7 +53,7 @@ button.small{padding:4px 9px;font-size:13px}
 #page .sign b{display:block}
 #page .stamp{height:150px;display:flex;align-items:center;justify-content:center;margin:2px 0}
 #page .stamp img{max-height:150px;max-width:210px}
-#page .nm{font-weight:700;text-decoration:underline;text-align:right}
+#page .nm{font-weight:700;text-decoration:underline;text-align:center}
 @media print{
   @page{size:A4;margin:0}
   body{background:#fff}
@@ -132,7 +132,6 @@ button.small{padding:4px 9px;font-size:13px}
     <div class="row pv-tools" style="justify-content:space-between;margin-bottom:10px">
       <h2 style="margin:0">Pratinjau</h2>
       <div class="row">
-        <button id="btnPrint">Cetak</button>
         <button id="btnPdf" class="primary">Unduh PDF</button>
       </div>
     </div>
@@ -154,7 +153,7 @@ const defaultSettings = {
 
 const blankInvoice = () => ({
   id: uid(), nomor: '', tanggal: '',
-  kNama: 'Ibu Jihan lestari', kPerusahaan: 'Ann’s Bakehouse',
+  kNama: 'Ibu Jihan lestari', kPerusahaan: 'Annâs Bakehouse',
   kAlamat: 'Gedung Menara Kadin Lt.07\nJl. Hr. Raduna Said, Kuningan\nJakarta Selatan',
   pickup: 'jl. Limo Raya blok T 06, Kebayoran Lama , Grogol Utara,Jakarta Selatan',
   tujuan: 'Jl. Sungai Sambas 3 No.12, RT.8/RW.5, Kramat Pela, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12130',
@@ -241,7 +240,7 @@ function renderItems() {
       <input data-i="${i}" data-f="qty" value="${esc(it.qty)}" placeholder="1 Unit" aria-label="Jumlah">
       <input data-i="${i}" data-f="ket" value="${esc(it.ket)}" placeholder="Keterangan" aria-label="Keterangan">
       <input class="h" data-i="${i}" data-f="harga" value="${esc(it.harga)}" inputmode="numeric" placeholder="Harga" aria-label="Harga">
-      <button class="small danger" data-del="${i}" aria-label="Hapus item">✕</button>
+      <button class="small danger" data-del="${i}" aria-label="Hapus item">â</button>
     </div>`).join('');
 }
 function renderList() {
@@ -249,7 +248,7 @@ function renderList() {
   if (!db.invoices.length) { el.innerHTML = '<p class="note" style="margin:0">Belum ada invoice tersimpan. Isi formulir lalu tekan Simpan.</p>'; return; }
   el.innerHTML = db.invoices.map(v => `
     <div class="saved">
-      <div><b>${esc(v.kPerusahaan || v.kNama || 'Tanpa nama')}</b><span>${esc(v.nomor ? 'No. ' + v.nomor + ' · ' : '')}${esc(rp(v.total) || 'Total otomatis')}</span></div>
+      <div><b>${esc(v.kPerusahaan || v.kNama || 'Tanpa nama')}</b><span>${esc(v.nomor ? 'No. ' + v.nomor + ' Â· ' : '')}${esc(rp(v.total) || 'Total otomatis')}</span></div>
       <div class="row"><button class="small" data-load="${v.id}">Buka</button><button class="small danger" data-rm="${v.id}">Hapus</button></div>
     </div>`).join('');
 }
@@ -318,18 +317,33 @@ $('#fileImport').onchange = async e => {
 };
 
 /* ---------- cetak / PDF ---------- */
-$('#btnPrint').onclick = () => window.print();
 $('#btnPdf').onclick = async () => {
-  const btn = $('#btnPdf'); btn.disabled = true; btn.textContent = 'Membuat PDF…';
+  const btn = $('#btnPdf'); btn.disabled = true; btn.textContent = 'Membuat PDFâ¦';
   const name = 'Invoice-' + (cur.kPerusahaan || cur.kNama || 'truck-moving').replace(/[^\w-]+/g, '-') + (cur.nomor ? '-' + cur.nomor.replace(/[^\w-]+/g, '-') : '') + '.pdf';
   try {
-    await html2pdf().set({
-      margin: 0, filename: name,
+    const blob = await html2pdf().set({
+      margin: 0,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from($('#page')).save();
-  } catch (e) { alert('Gagal membuat PDF. Coba tombol Cetak lalu pilih “Simpan sebagai PDF”.'); }
+    }).from($('#page')).outputPdf('blob');
+
+    const file = new File([blob], name, { type: 'application/pdf' });
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    let done = false;
+    // iPhone/iPad: buka lembar bagikan, lalu pilih "Simpan ke Berkas"
+    if (isIOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); done = true; }
+      catch (e) { if (e.name === 'AbortError') done = true; }
+    }
+    // Android dan desktop: unduh langsung
+    if (!done) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    }
+  } catch (e) { alert('Gagal membuat PDF. Muat ulang halaman lalu coba lagi.'); }
   btn.disabled = false; btn.textContent = 'Unduh PDF';
 };
 
