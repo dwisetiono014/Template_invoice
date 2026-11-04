@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generator Invoice Truck Moving</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{--bg:#f3f5f4;--card:#fff;--ink:#1d2421;--muted:#5d6a64;--line:#d5dcd8;--green:#0a9a4f;--green-d:#077a3d;--red:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#161a18;--card:#202523;--ink:#e8eeea;--muted:#9aa8a1;--line:#37403b;--green:#27b36b;--green-d:#1f9a5a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header.top{background:var(--green-d);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header.top h1{margin:0;font-size:18px}
+.wrap{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:18px;padding:18px;align-items:start}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:15px}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 3px}
+input,textarea{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+textarea{min-height:64px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+button{font:inherit;padding:8px 13px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+button.danger{color:var(--red)}
+button.small{padding:4px 9px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.item{display:grid;grid-template-columns:80px 1fr 110px auto;gap:6px;margin-bottom:6px}
+@media(max-width:520px){.item{grid-template-columns:70px 1fr auto}.item .h{grid-column:1/3}}
+.saved{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.saved:first-of-type{border-top:0}
+.saved b{display:block;font-size:14px}.saved span{font-size:12px;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.pv-scroll{overflow-x:auto;padding-bottom:10px}
+/* Pratinjau invoice (kertas A4, selalu terang) */
+#page{width:794px;height:1122px;background:#fff;color:#000;margin:0 auto;padding:58px 80px;font:17px/1.3 "Times New Roman","Liberation Serif",Times,serif;overflow:hidden;position:relative}
+#page .hd{border-top:2px solid #000;border-bottom:2px solid #000;text-align:center;padding:8px 0 6px}
+#page .hd h3{margin:0;font:700 34px/1.1 Calibri,Carlito,"Segoe UI",sans-serif;color:#00a651}
+#page .hd p{margin:0;font-size:14.5px;line-height:1.5}
+#page .ttl{text-align:center;font-weight:700;font-size:21px;margin:20px 0 8px}
+#page .meta{text-align:center;font-size:15px;margin:-4px 0 6px}
+#page .to{margin:10px 0 24px;font-size:18px;line-height:1.45}
+#page table{width:100%;border-collapse:collapse;font-size:17px}
+#page th,#page td{border:1px solid #000;padding:1px 6px;vertical-align:top}
+#page th{font-weight:700;text-align:center;vertical-align:middle;padding:3px 6px}
+#page td.sm{font-size:13.5px;text-align:center;line-height:1.25;vertical-align:middle;padding:4px}
+#page td.r{text-align:right;white-space:nowrap}
+#page tr.tot td{font-weight:700;text-align:center;padding:1px 6px}
+#page tr.tot td.r{text-align:right}
+#page .rek{margin-top:22px;font-weight:700;font-size:18px;line-height:1.5}
+#page .sign{margin:34px 0 0 auto;width:230px;text-align:right}
+#page .sign b{display:block}
+#page .stamp{height:150px;display:flex;align-items:center;justify-content:center;margin:2px 0}
+#page .stamp img{max-height:150px;max-width:210px}
+#page .nm{font-weight:700;text-decoration:underline;text-align:right}
+@media print{
+  @page{size:A4;margin:0}
+  body{background:#fff}
+  header.top,.form-col,.pv-tools{display:none!important}
+  .wrap{display:block;padding:0}.card{border:0;padding:0;margin:0}.pv-scroll{overflow:visible}
+  #page{margin:0}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Generator invoice</h1>
+  <div class="row">
+    <button id="btnNew">Invoice baru</button>
+    <button id="btnSave" class="primary">Simpan</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="form-col">
+    <div class="card">
+      <h2>Invoice tersimpan</h2>
+      <div id="list"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnExport" class="small">Unduh data (.txt)</button>
+        <button id="btnImport" class="small">Muat data (.txt)</button>
+        <input type="file" id="fileImport" accept=".txt,text/plain" hidden>
+      </div>
+      <p class="note">Data disimpan di browser ini. Unduh file .txt secara berkala sebagai cadangan, atau untuk dipindah ke perangkat lain.</p>
+    </div>
+
+    <div class="card">
+      <h2>Kop surat</h2>
+      <label>Nama usaha</label><input data-s="nama">
+      <label>Sub judul</label><input data-s="sub">
+      <label>Alamat</label><textarea data-s="alamat"></textarea>
+      <label>Telepon</label><input data-s="telp">
+    </div>
+
+    <div class="card">
+      <h2>Invoice</h2>
+      <div class="row">
+        <div style="flex:1;min-width:140px"><label>Nomor (opsional)</label><input data-k="nomor"></div>
+        <div style="flex:1;min-width:140px"><label>Tanggal (opsional)</label><input type="date" data-k="tanggal"></div>
+      </div>
+      <label>Kepada Yth (nama)</label><input data-k="kNama">
+      <label>Perusahaan</label><input data-k="kPerusahaan">
+      <label>Alamat penerima</label><textarea data-k="kAlamat"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>Rincian pengiriman</h2>
+      <label>Alamat pengambilan</label><textarea data-k="pickup"></textarea>
+      <label>Alamat tujuan</label><textarea data-k="tujuan"></textarea>
+      <label>Item (jumlah, keterangan, harga)</label>
+      <div id="items"></div>
+      <button id="btnAddItem" class="small">+ Tambah item</button>
+      <label>Jumlah total (Rp)</label>
+      <input data-k="total" inputmode="numeric" placeholder="Kosongkan untuk menjumlah harga item otomatis">
+    </div>
+
+    <div class="card">
+      <h2>Pembayaran dan tanda tangan</h2>
+      <label>Bank dan nomor rekening</label><input data-k="rek">
+      <label>Atas nama</label><input data-k="an">
+      <label>Jabatan penandatangan</label><input data-k="jabatan">
+      <label>Nama penandatangan</label><input data-k="ttd">
+      <label>Gambar stempel / tanda tangan (opsional)</label>
+      <input type="file" id="fileStamp" accept="image/*">
+      <button id="btnClearStamp" class="small" style="margin-top:6px">Hapus gambar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row pv-tools" style="justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">Pratinjau</h2>
+      <div class="row">
+        <button id="btnPrint">Cetak</button>
+        <button id="btnPdf" class="primary">Unduh PDF</button>
+      </div>
+    </div>
+    <div class="pv-scroll"><div id="page"></div></div>
+  </div>
+</div>
+
+<script>
+const KEY = 'invoice_app_v1';
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+const defaultSettings = {
+  nama: 'TRUCK MOVING',
+  sub: 'BUDI TRANSPORTER',
+  alamat: 'Jl. KH Abdul Rachman III Kp. Bojongrangkong RT.006/RW.008 No.65 Kel. Pulo Gebang\nKec. Cakung, Jakarta Timur 13950',
+  telp: 'Phone : +62 819-0552-5229 / +62 812-9625-448'
+};
+
+const blankInvoice = () => ({
+  id: uid(), nomor: '', tanggal: '',
+  kNama: 'Ibu Jihan lestari', kPerusahaan: 'Ann’s Bakehouse',
+  kAlamat: 'Gedung Menara Kadin Lt.07\nJl. Hr. Raduna Said, Kuningan\nJakarta Selatan',
+  pickup: 'jl. Limo Raya blok T 06, Kebayoran Lama , Grogol Utara,Jakarta Selatan',
+  tujuan: 'Jl. Sungai Sambas 3 No.12, RT.8/RW.5, Kramat Pela, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12130',
+  items: [
+    { qty: '1 Unit', ket: 'Truck Long Bak', harga: '' },
+    { qty: '', ket: '3 TKBM', harga: '' },
+    { qty: '1 Unit', ket: 'Hand Pallet', harga: '' },
+    { qty: '1 Unit', ket: 'Hand Lief', harga: '' }
+  ],
+  total: '2900000',
+  rek: 'Mandiri (1660001185396)', an: 'Budi Suradi',
+  jabatan: 'Pemilik', ttd: 'Budi Suradi', stempel: ''
+});
+
+let db = { settings: { ...defaultSettings }, invoices: [] };
+let cur = blankInvoice();
+
+/* ---------- penyimpanan ---------- */
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch (e) { alert('Penyimpanan browser penuh. Unduh data (.txt) lalu hapus gambar stempel yang besar.'); }
+}
+async function loadDb() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { db = JSON.parse(raw); }
+    else {
+      // Jika ada data.txt di repository, muat sebagai data awal
+      const r = await fetch('data.txt', { cache: 'no-store' });
+      if (r.ok) { db = normalize(JSON.parse(await r.text())); }
+    }
+  } catch (e) { /* abaikan, pakai bawaan */ }
+  db.settings = { ...defaultSettings, ...(db.settings || {}) };
+  db.invoices = db.invoices || [];
+}
+function normalize(d) {
+  return { settings: { ...defaultSettings, ...(d.settings || {}) }, invoices: Array.isArray(d.invoices) ? d.invoices : [] };
+}
+
+/* ---------- util ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const nl = s => esc(s).replace(/\n/g, '<br>');
+const digits = s => String(s ?? '').replace(/\D/g, '');
+const rp = v => { const d = digits(v); return d ? 'Rp. ' + Number(d).toLocaleString('id-ID') : ''; };
+const tgl = v => v ? new Date(v + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+/* ---------- pratinjau ---------- */
+function renderPreview() {
+  const s = db.settings, c = cur;
+  const items = c.items.length ? c.items : [{ qty: '', ket: '', harga: '' }];
+  const n = items.length;
+  const sum = items.reduce((a, it) => a + Number(digits(it.harga) || 0), 0);
+  const total = digits(c.total) ? Number(digits(c.total)) : sum;
+  const rows = items.map((it, i) => `<tr>${i === 0
+      ? `<td rowspan="${n}" class="sm" style="width:17%">${nl(c.pickup)}</td><td rowspan="${n}" class="sm" style="width:27%">${nl(c.tujuan)}</td>` : ''}
+      <td style="width:13%">${esc(it.qty)}</td><td style="width:25%">${esc(it.ket)}</td><td class="r">${rp(it.harga)}</td></tr>`).join('');
+  const meta = [c.nomor && 'No. ' + esc(c.nomor), c.tanggal && esc(tgl(c.tanggal))].filter(Boolean).join(' &nbsp;|&nbsp; ');
+  $('#page').innerHTML = `
+    <div class="hd"><h3>${esc(s.nama)}</h3><p>${esc(s.sub)}</p><p>${nl(s.alamat)}</p><p>${esc(s.telp)}</p></div>
+    <div class="ttl">INVOICE</div>
+    ${meta ? `<div class="meta">${meta}</div>` : ''}
+    <div class="to">Kepada Yth:<br>${esc(c.kNama)}<br><b><i>${esc(c.kPerusahaan)}</i></b><br>${nl(c.kAlamat)}</div>
+    <table>
+      <tr><th>Alamat<br>Pengambilan</th><th>Alamat Tujuan</th><th>Quantity</th><th>Keterangan</th><th>Harga</th></tr>
+      ${rows}
+      <tr class="tot"><td colspan="4">Jumlah Total</td><td class="r">${total ? rp(total) : ''}</td></tr>
+    </table>
+    <div class="rek">No. Rek: ${esc(c.rek)}<br>A.n ${esc(c.an)}</div>
+    <div class="sign"><b>Hormat Kami</b>${esc(c.jabatan)}
+      <div class="stamp">${c.stempel ? `<img src="${c.stempel}" alt="">` : ''}</div>
+      <div class="nm">${esc(c.ttd)}</div>
+    </div>`;
+}
+
+/* ---------- form ---------- */
+function fillForm() {
+  document.querySelectorAll('[data-k]').forEach(el => el.value = cur[el.dataset.k] ?? '');
+  document.querySelectorAll('[data-s]').forEach(el => el.value = db.settings[el.dataset.s] ?? '');
+  renderItems(); renderPreview();
+}
+function renderItems() {
+  $('#items').innerHTML = cur.items.map((it, i) => `
+    <div class="item">
+      <input data-i="${i}" data-f="qty" value="${esc(it.qty)}" placeholder="1 Unit" aria-label="Jumlah">
+      <input data-i="${i}" data-f="ket" value="${esc(it.ket)}" placeholder="Keterangan" aria-label="Keterangan">
+      <input class="h" data-i="${i}" data-f="harga" value="${esc(it.harga)}" inputmode="numeric" placeholder="Harga" aria-label="Harga">
+      <button class="small danger" data-del="${i}" aria-label="Hapus item">✕</button>
+    </div>`).join('');
+}
+function renderList() {
+  const el = $('#list');
+  if (!db.invoices.length) { el.innerHTML = '<p class="note" style="margin:0">Belum ada invoice tersimpan. Isi formulir lalu tekan Simpan.</p>'; return; }
+  el.innerHTML = db.invoices.map(v => `
+    <div class="saved">
+      <div><b>${esc(v.kPerusahaan || v.kNama || 'Tanpa nama')}</b><span>${esc(v.nomor ? 'No. ' + v.nomor + ' · ' : '')}${esc(rp(v.total) || 'Total otomatis')}</span></div>
+      <div class="row"><button class="small" data-load="${v.id}">Buka</button><button class="small danger" data-rm="${v.id}">Hapus</button></div>
+    </div>`).join('');
+}
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.k) cur[t.dataset.k] = t.value;
+  else if (t.dataset.s) db.settings[t.dataset.s] = t.value;
+  else if (t.dataset.i !== undefined) cur.items[+t.dataset.i][t.dataset.f] = t.value;
+  else return;
+  renderPreview();
+});
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.del !== undefined) { cur.items.splice(+t.dataset.del, 1); renderItems(); renderPreview(); }
+  if (t.dataset.load) { cur = JSON.parse(JSON.stringify(db.invoices.find(v => v.id === t.dataset.load))); fillForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  if (t.dataset.rm) { if (confirm('Hapus invoice ini?')) { db.invoices = db.invoices.filter(v => v.id !== t.dataset.rm); persist(); renderList(); } }
+});
+
+$('#btnAddItem').onclick = () => { cur.items.push({ qty: '', ket: '', harga: '' }); renderItems(); renderPreview(); };
+$('#btnNew').onclick = () => {
+  const old = cur; cur = blankInvoice();
+  Object.assign(cur, { nomor: '', tanggal: '', kNama: '', kPerusahaan: '', kAlamat: '', pickup: '', tujuan: '', items: [{ qty: '', ket: '', harga: '' }], total: '', stempel: old.stempel });
+  fillForm();
+};
+$('#btnSave').onclick = () => {
+  const i = db.invoices.findIndex(v => v.id === cur.id);
+  const copy = JSON.parse(JSON.stringify(cur));
+  if (i >= 0) db.invoices[i] = copy; else db.invoices.unshift(copy);
+  persist(); renderList();
+  $('#btnSave').textContent = 'Tersimpan'; setTimeout(() => $('#btnSave').textContent = 'Simpan', 1200);
+};
+
+/* ---------- stempel ---------- */
+$('#fileStamp').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image(), url = URL.createObjectURL(f);
+  img.onload = () => {
+    const k = Math.min(1, 420 / Math.max(img.width, img.height));
+    const cv = document.createElement('canvas');
+    cv.width = img.width * k; cv.height = img.height * k;
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    cur.stempel = cv.toDataURL('image/png');
+    URL.revokeObjectURL(url); renderPreview();
+  };
+  img.src = url;
+};
+$('#btnClearStamp').onclick = () => { cur.stempel = ''; $('#fileStamp').value = ''; renderPreview(); };
+
+/* ---------- ekspor / impor txt ---------- */
+$('#btnExport').onclick = () => {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'text/plain' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'data.txt'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('#btnImport').onclick = () => $('#fileImport').click();
+$('#fileImport').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = normalize(JSON.parse(await f.text()));
+    if (!confirm('Data di browser ini akan diganti dengan isi file. Lanjutkan?')) return;
+    db = d; persist(); renderList(); fillForm();
+  } catch (err) { alert('File tidak valid. Gunakan file .txt hasil unduhan aplikasi ini.'); }
+  e.target.value = '';
+};
+
+/* ---------- cetak / PDF ---------- */
+$('#btnPrint').onclick = () => window.print();
+$('#btnPdf').onclick = async () => {
+  const btn = $('#btnPdf'); btn.disabled = true; btn.textContent = 'Membuat PDF…';
+  const name = 'Invoice-' + (cur.kPerusahaan || cur.kNama || 'truck-moving').replace(/[^\w-]+/g, '-') + (cur.nomor ? '-' + cur.nomor.replace(/[^\w-]+/g, '-') : '') + '.pdf';
+  try {
+    await html2pdf().set({
+      margin: 0, filename: name,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from($('#page')).save();
+  } catch (e) { alert('Gagal membuat PDF. Coba tombol Cetak lalu pilih “Simpan sebagai PDF”.'); }
+  btn.disabled = false; btn.textContent = 'Unduh PDF';
+};
+
+/* ---------- mulai ---------- */
+loadDb().then(() => { renderList(); fillForm(); });
+</script>
+</body>
+</html>
